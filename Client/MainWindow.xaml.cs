@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using System.Net.Sockets;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -24,6 +25,7 @@ public partial class MainWindow : Window
         _stream = _client.GetStream();
         _bw = new BinaryWriter(_stream);
         _br = new BinaryReader(_stream);
+        MyGrid.IsEnabled = false;
 
         _buttons = new Button[9]
         {
@@ -50,7 +52,7 @@ public partial class MainWindow : Window
                     Dispatcher.Invoke(() => _buttons[i].Content = chars[i]);
 
                 _myTurn = !_myTurn;
-                Dispatcher.Invoke(() => Griddd.IsEnabled = _myTurn);
+                Dispatcher.Invoke(() => MyGrid.IsEnabled = _myTurn);
                 CheckForWinner(chars);
 
             }
@@ -61,24 +63,103 @@ public partial class MainWindow : Window
     {
         _myTurn = _br.ReadBoolean();
         _mySymbol = _br.ReadChar();
-        Dispatcher.Invoke(() => Griddd.IsEnabled = _myTurn);
+        Dispatcher.Invoke(() => MyGrid.IsEnabled = _myTurn);
         Task.Run(GetChanges);
     }
 
     private void CheckForWinner(char[] chars)
     {
-        char[,] tmp = new char[3, 3]
+        const int arraySize = 3;
+
+        char[,] tmp = new char[arraySize, arraySize]
         {
             {chars[0],chars[1],chars[2] },
             {chars[3],chars[4],chars[5] },
             {chars[6],chars[7],chars[8] },
         };
 
-        for (int i = 0; i < 3; i++)
+
+        for (int i = 0; i < arraySize; i++)
         {
-            if (tmp[i,0] == tmp[i,1] && tmp[i,1] == tmp[i,2] && tmp[i,0] != '\0')
-                MessageBox.Show("Test");
+            if (tmp[i, 0] == tmp[i, 1] && tmp[i, 1] == tmp[i, 2] && tmp[i, 0] == _mySymbol)
+            {
+                MessageBox.Show($"{_mySymbol} Won");
+                ClearDesk();
+                return;
+            }
+
+            if (tmp[0, i] == tmp[1, i] && tmp[1, i] == tmp[2, i] && tmp[0, i] == _mySymbol)
+            {
+                MessageBox.Show($"{_mySymbol} Won");
+                ClearDesk();
+                return;
+            }
+
+            if (tmp[0,0] == tmp[1,1] && tmp[1,1] == tmp[2,2] && tmp[0,0] == _mySymbol)
+            {
+                MessageBox.Show($"{_mySymbol} Won");
+                ClearDesk();
+                return;
+            }
+
+            if (tmp[0,2] == tmp[1, 1] && tmp[1, 1] == tmp[2, 0] && tmp[0, 2] == _mySymbol)
+            {
+                MessageBox.Show($"{_mySymbol} Won");
+                ClearDesk();
+                return;
+            }
         }
+
+        for (int i = 0; i < arraySize; i++)
+        {
+            if (tmp[i, 0] == tmp[i, 1] && tmp[i, 1] == tmp[i, 2] && tmp[i, 0] != _mySymbol && tmp[i, 0]!='\0')
+            {
+                MessageBox.Show($"{_mySymbol} Lost");
+                ClearDesk();
+                return;
+            }
+
+            if (tmp[0, i] == tmp[1, i] && tmp[1, i] == tmp[2, i] && tmp[0, i] != _mySymbol && tmp[0, i] != '\0')
+            {
+                MessageBox.Show($"{_mySymbol} Lost");
+                ClearDesk();
+                return;
+            }
+
+            if (tmp[0, 0] == tmp[1, 1] && tmp[1, 1] == tmp[2, 2] && tmp[0, 0] != _mySymbol && tmp[0, 0] != '\0')
+            {
+                MessageBox.Show($"{_mySymbol} Lost");
+                ClearDesk();
+                return;
+            }
+
+            if (tmp[0, 2] == tmp[1, 1] && tmp[1, 1] == tmp[2, 0] && tmp[0, 2] != _mySymbol && tmp[0, 2] != '\0')
+            {
+                MessageBox.Show($"{_mySymbol} Lost");
+                ClearDesk();
+                return;
+            }
+        }
+
+        var isTie = true;
+
+        for (int i = 0; i < arraySize; i++)
+            for (int j = 0; j < arraySize; j++)
+                if (tmp[i,j] == '\0')
+                    isTie = false;
+
+        if (isTie)
+        {
+            MessageBox.Show($"Game ended tie");
+            ClearDesk();
+            return;
+        }
+    }
+
+    private void ClearDesk()
+    {
+        foreach (var btn in _buttons)
+            Dispatcher.Invoke(() => btn.Content = null);
     }
 
     private void btn_Click(object sender, RoutedEventArgs e)
@@ -99,7 +180,7 @@ public partial class MainWindow : Window
                 _bw.Write(chars);
                 _bw.Flush();
                 _myTurn = !_myTurn;
-                Griddd.IsEnabled = _myTurn;
+                MyGrid.IsEnabled = _myTurn;
                 CheckForWinner(chars);
 
             }
